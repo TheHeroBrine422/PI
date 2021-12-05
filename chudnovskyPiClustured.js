@@ -4,8 +4,14 @@ const cluster = require('cluster')
 const numCPUs = require('os').cpus().length
 const process = require('process')
 
-iterations = 5e2
-Decimal.set({precision:20000})
+iterations = 1e4
+Decimal.set({precision:170000})
+/*2e3: 32k
+4e3: 64k
+8e3: 128k
+10e3: 160k
+12e3: 192k
+16e3: 256k*/
 
 if (cluster.isPrimary) {
   partialSums = []
@@ -39,21 +45,20 @@ if (cluster.isPrimary) {
   }
 
   startTime = Date.now()
+  console.log(new Date())
   partialSumsRec = 0
   for (var i = 0; i < numCPUs; i++) {
     console.log("starting worker "+(i+1))
     worker = cluster.fork({id:(i+1)})
     worker.on('message', msg => {
-      for (var i = 0; i < msg.length; i++) {
-        partialSums.push(msg[i])
-      }
+      partialSums.push(msg)
       partialSumsRec++
       console.log("finished worker")
     })
   }
   finishID = setInterval(finish,10)
 } else {
-  localpartialSums = []
+  localPartialSum = new Decimal(0)
   exponentialTerm = new Decimal(1)
   linearTerm = new Decimal(13591409)
   for (var i = Number(process.env.id); i < iterations; i+=numCPUs) {
@@ -62,10 +67,9 @@ if (cluster.isPrimary) {
     for (var j = 0; j < Math.min(i,numCPUs); j++) {
       exponentialTerm = exponentialTerm.mul(-262537412640768000)
     }
-    localpartialSums.push(multinomialTerm.mul(linearTerm).div(exponentialTerm))
-    //console.log(i)
+    localPartialSum.add(multinomialTerm.mul(linearTerm).div(exponentialTerm))
   }
-  process.send(localpartialSums)
+  process.send(localPartialSum)
 }
 
 function factorial(num) {
