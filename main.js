@@ -94,7 +94,7 @@ for (var i = 2; i < 4; i++) {
   console.log("1e"+i+": "+((endTime-startTime)/1000)+" seconds - "+pi+" - "+checkDigits(pi, Math.PI)+" correct Digits")
 }
 
-precision = 1000
+precision = 100
 console.log("Chudnovsky Decimal:")
 for (var i = 1; i < 100; i++) {
   startTime = Date.now()
