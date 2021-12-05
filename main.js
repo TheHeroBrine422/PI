@@ -57,10 +57,6 @@ function chudnovskyPiDecimal(iterations, precision) {
   return constTerm.div(partialSum)
 }
 
-function chudnovskyPi(iterations) {
-
-}
-
 function checkDigits(n1, n2) {
   n1 = n1.toString()
   n2 = n2.toString()
@@ -92,23 +88,22 @@ for (var i = 2; i < 7; i++) {
 console.log("Leibniz Decimal:")
 for (var i = 2; i < 4; i++) {
   startTime = Date.now()
-  pi = leibnizPiDecimal(Math.pow(i,10), 50)
+  pi = leibnizPiDecimal(Math.pow(i,10), 15)
   endTime = Date.now()
 
   console.log("1e"+i+": "+((endTime-startTime)/1000)+" seconds - "+pi+" - "+checkDigits(pi, Math.PI)+" correct Digits")
 }
 
-precision = 2000
+precision = 1000
 console.log("Chudnovsky Decimal:")
 for (var i = 1; i < 100; i++) {
   startTime = Date.now()
-  iter = Math.pow(i,2)
-
+  iter = Math.pow(2,i)
   pi = chudnovskyPiDecimal(iter, precision)
   endTime = Date.now()
   correctDigits = checkDigits(pi, realPi)
-  console.log(iter.toExponential().toString().toString().replace(/\+/g, '')+": "+((endTime-startTime)/1000)+" seconds - "+correctDigits+" correct Digits")
-  if (correctDigits+1000 > precision) {
-    precision += 1000
+  console.log(iter.toExponential().toString().replace(/\+/g, '')+": "+((endTime-startTime)/1000)+" seconds - "+correctDigits+" correct Digits - precision: "+precision+" digits")
+  if (correctDigits*2 > precision) {
+    precision *= 2
   }
 }
