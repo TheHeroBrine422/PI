@@ -1,12 +1,30 @@
 // C version of the code: https://gist.github.com/komasaru/9e418eb666ab649ef589
 const Decimal = require('decimal.js')
 const fs = require('fs')
+const {GPU} = require('gpu.js')
+const gpu = new GPU();
 
+gpuMode = true
 
 d = 1000000 // digit to compute
 
 d--
 
+kernelSize = 1024
+
+massCompModExp = gpu.createKernel(function(a) {
+  let m = 8 * a[this.thread.x][0] + a[this.thread.x][1]
+
+  let ans = 1
+  for (var i = 65; i > 1; i--) {
+    ans = (ans*ans) % m
+    if ((a[this.thread.x][i] % 2) == 1) {ans = (ans * 16) % m};
+  }
+  return (ans / m) % 1
+}).setOutput([kernelSize]);
+
+//let r = 8 * a[this.thread.x][1] + a[this.thread.x][2]
+//return compModExp(a[this.thread.x][0] - a[this.thread.x][1], r) / r
 function S(j) {
   let s = 0.0;        // Summation of Total, Left
   let t;              // Each term of right summation
@@ -14,14 +32,83 @@ function S(j) {
   let k;              // Loop index
   let EPS = 1.0e-17;  // Loop-exit accuration of the right summation
 
-  // Left Sum (0 ... d)
-  for (k = 0; k <= d; k++) {
-      r = 8 * k + j;
-      t = compModExp(16, d - k, r);
-      t /= r;
-      s += t%1;
-      s -= Math.floor(s);
+  if (!gpuMode) {
+    // Left Sum (0 ... d)
+    for (k = 0; k <= d; k++) {
+        r = 8 * k + j;
+        t = compModExp(d - k, r);
+        t /= r;
+        s += t%1;
+        s -= Math.floor(s);
+    }
+  } else {
+
+    gpuArray = []
+    gpuArrays = []
+
+    for (k = 0; k <= d; k++) {
+      temp = [k, j]
+      let eValues = [d - k]
+      for (var i = 0; i < 63; i++) {
+        eValues.push(Math.floor(eValues[eValues.length-1]/2))
+      }
+
+      temp = temp.concat(eValues)
+      gpuArray.push(temp)
+
+    }
+
+    debugger
+
+    /*while (true) {
+      temp = gpuArray.splice(0, kernelSize)
+      if (temp.length < kernelSize) {
+        temp = temp.concat(Array(kernelSize-temp.length).fill(Array(66).fill(0)))
+        gpuArrays.push(temp)
+        break
+      }
+      gpuArrays.push(temp)
+    }
+
+    out = []
+    for (var i = 0; i < gpuArrays.length; i++) {
+      out.push(massCompModExp(gpuArrays[i]))
+    }*/
+
+
+
+    fin = []
+
+    for (var i = 0; i < gpuArray.length; i++) {
+      fin.push(gpuCompModExpTest(gpuArray[i]))
+    }
+
+    //console.log(fin[0])
+
+    /*for (var i = 0; i < out.length; i++) {
+      for (var j = 0; j < out[0].length; j++) {
+        fin.push(out[i][j])
+      }
+    }*/
+
+    debugger
+    console.log(fin.length)
+    nanCounter = 0
+
+    for (var i = 0; i < fin.length; i++) {
+      if (!Number.isNaN(fin[i])) { // check nan
+        s += fin[i];
+        s -= Math.floor(s);
+      } else {
+        nanCounter++
+      }
+    }
+    console.log(nanCounter)
   }
+
+  console.log(s)
+
+console.log("first half time:"+(Date.now()-startTime))
 
   // Right sum (d + 1 ...)
   while (true) {
@@ -34,18 +121,46 @@ function S(j) {
       k ++;
   }
 
+  console.log("second half time:"+(Date.now()-startTime))
+
+
   return s;
 }
 
-function compModExp(b, e, m) {
+function compModExpNonRecursive(e,m) {
+  let eValues = [e]
+  for (var i = 0; i < 63; i++) {
+    eValues.push(Math.floor(eValues[eValues.length-1]/2))
+  }
+
+  let ans = 1
+  for (var i = eValues.length-1; i > 0; i--) {
+    ans = (ans*ans) % m
+    if ((eValues[i] % 2) == 1) ans = (ans * 16) % m;
+  }
+  return ans
+}
+
+function gpuCompModExpTest(eValues) {
+  let m = 8 * eValues[0] + eValues[1]
+
+  let ans = 1
+  for (var i = 65; i > 1; i--) {
+    //console.log(i)
+    ans = (ans*ans) % m
+    if ((eValues[i] % 2) == 1) ans = (ans * 16) % m;
+  }
+  return (ans / m) % 1
+}
+
+function compModExp(e, m) {
     let ans;
 
     if (e == 0) return 1;
 
-    ans = compModExp(b, Math.floor(e / 2), m);
+    ans = compModExp(Math.floor(e / 2), m);
     ans = (ans * ans) % m;
-    if ((e % 2) == 1) ans = (ans * b) % m;
-
+    if ((e % 2) == 1) ans = (ans * 16) % m;
     return ans;
 }
 
