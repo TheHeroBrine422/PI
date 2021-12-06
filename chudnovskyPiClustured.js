@@ -6,6 +6,8 @@ const process = require('process')
 
 iterations = 1e4
 Decimal.set({precision:170000})
+/*iterations = 1e3
+Decimal.set({precision:17000})*/
 /*2e3: 32k
 4e3: 64k
 8e3: 128k
