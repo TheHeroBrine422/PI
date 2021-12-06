@@ -3,7 +3,7 @@ const Decimal = require('decimal.js')
 const fs = require('fs')
 
 
-d = 100000 // digit to compute
+d = 1 // digit to compute
 
 d--
 
@@ -54,28 +54,11 @@ function convHex(x) {
     hx = "0123456789ABCDEF";
     let out = ""
 
-    for (var i = 0; i < 16; i++) {
+    for (var i = 0; i < 4; i++) {
         y = 16.0 * (y - Math.floor(y));
         out += hx.charAt(Math.floor(y));
     }
     return out
-}
-
-function hexToDec(s) {
-    var i, j, digits = [0], carry;
-    for (i = 0; i < s.length; i ++) {
-        carry = parseInt(s.charAt(i), 16);
-        for (j = 0; j < digits.length; j += 1) {
-            digits[j] = digits[j] * 16 + carry;
-            carry = digits[j] / 10 | 0;
-            digits[j] %= 10;
-        }
-        while (carry > 0) {
-            digits.push(carry % 10);
-            carry = carry / 10 | 0;
-        }
-    }
-    return digits.reverse().join('');
 }
 
 function checkDigits(n1, n2) {
@@ -88,19 +71,35 @@ function checkDigits(n1, n2) {
   return correctDigits
 }
 
-Decimal.config({ precision: 1000 })
+Decimal.config({ precision: 10 })
+
+realPi = fs.readFileSync('pi.txt').toString()
+
+console.log(new Date())
+hexPi = "0x3."
+d = 0
 
 startTime = Date.now()
-for (var i = 0; i < 100; i++) {
+for (var i = 0; i <10000; i++) {
   pi = 4.0 * S(1) - 2.0 * S(4) - S(5) - S(6);
   pi = pi - Math.floor(pi) +1
+  d+=4
+  hexPi += convHex(pi)
+  if(i/1000%1 == 0) {console.log(i+" "+(Date.now()-startTime))}
 }
 
+console.log("time:"+(Date.now()-startTime))
+finPi = new Decimal(hexPi)
+console.log("convertTime:"+(Date.now()-startTime))
 
-endtime = Date.now()
+correctDigits = checkDigits(finPi, realPi)
+console.log(correctDigits+" correct Digits")
 
-console.log("time:"+(endtime-startTime))
 
+
+
+
+/*
 hexPiFirst = convHex(pi)
 
 d = 16
@@ -120,13 +119,4 @@ base10PiFirst = base10PiFirst.toFixed(15)
 numOfZeros = 13
 based10PiTest = new Decimal(base10PiFirst).add(new Decimal("0x0."+Array(numOfZeros).fill('0').join('')+hexPiSecond))
 console.log(hexToDec(hexPiFirst))
-
-
-/*
-realPi = fs.readFileSync('pi.txt').toString()
-correctDigits = checkDigits(based10PiTest, realPi)
-console.log(correctDigits+" correct Digits")
-//console.log(base10Pi)
-console.log(numOfZeros)
-console.log(based10PiTest)
-console.log(realPi.substring(0,100))*/
+*/
